@@ -86,12 +86,17 @@ class ZerionisLogEvent(BaseModel):
         return _strip_empty(data)
 
 
-def _strip_empty(obj: Any) -> Any:
+_STRIP_MAX_DEPTH = 32
+
+
+def _strip_empty(obj: Any, _depth: int = 0) -> Any:
     """Recursively remove keys whose values are None, empty dict, or empty string."""
+    if _depth > _STRIP_MAX_DEPTH:
+        return obj
     if isinstance(obj, dict):
         cleaned: dict[str, Any] = {}
         for k, v in obj.items():
-            v = _strip_empty(v)
+            v = _strip_empty(v, _depth + 1)
             if v is None:
                 continue
             if isinstance(v, dict) and not v:
@@ -101,5 +106,5 @@ def _strip_empty(obj: Any) -> Any:
             cleaned[k] = v
         return cleaned
     if isinstance(obj, list):
-        return [_strip_empty(i) for i in obj]
+        return [_strip_empty(i, _depth + 1) for i in obj]
     return obj

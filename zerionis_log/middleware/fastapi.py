@@ -19,7 +19,7 @@ from zerionis_log.models import (
 )
 from zerionis_log.otel import generate_trace_id, get_otel_trace_id
 from zerionis_log.sanitizer import Sanitizer
-from zerionis_log.validator import is_valid_trace_id, sanitize_path
+from zerionis_log.validator import is_valid_trace_id, sanitize_message, sanitize_path
 
 _logger = logging.getLogger("zerionis_log.middleware")
 
@@ -74,7 +74,8 @@ class ZerionisMiddleware:
         method = scope.get("method", "")
         client = scope.get("client")
         client_ip = client[0] if client else None
-        user_agent = headers_dict.get("user-agent")
+        ua_raw = headers_dict.get("user-agent")
+        user_agent = ua_raw[:512] if ua_raw else None
 
         if self._config.request_start_enabled:
             self._emit_event(
@@ -138,9 +139,10 @@ class ZerionisMiddleware:
             if len(lines) > self._config.max_stacktrace_lines:
                 stacktrace = "\n".join(lines[: self._config.max_stacktrace_lines])
 
+            exc_msg = sanitize_message(str(exc))
             self._emit_event(
                 EventType.REQUEST_ERROR,
-                message=f"{method} {path} 500 - {type(exc).__name__}: {exc}",
+                message=f"{method} {path} 500 - {type(exc).__name__}: {exc_msg}",
                 http=HttpInfo(
                     method=method,
                     path=path,
@@ -151,7 +153,7 @@ class ZerionisMiddleware:
                 ),
                 error=ErrorInfo(
                     type=type(exc).__name__,
-                    message=str(exc),
+                    message=exc_msg,
                     stacktrace=stacktrace,
                 ),
                 trace_id=trace_id,

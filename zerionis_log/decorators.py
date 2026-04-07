@@ -19,6 +19,7 @@ from zerionis_log.models import (
     ServiceInfo,
     ZerionisLogEvent,
 )
+from zerionis_log.validator import sanitize_message
 
 _logger = logging.getLogger("zerionis_log.decorators")
 
@@ -122,7 +123,7 @@ def log_slow(
                         _build_args_dict(args, kwargs),
                         error=ErrorInfo(
                             type=type(exc).__name__,
-                            message=str(exc),
+                            message=sanitize_message(str(exc)),
                             stacktrace=stacktrace,
                         ),
                     )
@@ -153,7 +154,7 @@ def log_slow(
                         _build_args_dict(args, kwargs),
                         error=ErrorInfo(
                             type=type(exc).__name__,
-                            message=str(exc),
+                            message=sanitize_message(str(exc)),
                             stacktrace=stacktrace,
                         ),
                     )

@@ -8,6 +8,9 @@ from typing import Any
 _DEFAULT_SENSITIVE: frozenset[str] = frozenset(
     {
         "password",
+        "passwd",
+        "pass",
+        "pwd",
         "token",
         "secret",
         "api_key",
@@ -23,8 +26,23 @@ _DEFAULT_SENSITIVE: frozenset[str] = frozenset(
         "set-cookie",
         "ssn",
         "credit_score",
+        "bearer",
+        "jwt",
+        "private_key",
+        "privatekey",
+        "signing_key",
+        "session",
+        "session_id",
+        "sessionid",
+        "client_secret",
+        "clientsecret",
+        "credentials",
+        "otp",
+        "mfa_code",
     }
 )
+
+_SENSITIVE_PATTERNS: tuple[str, ...] = ("secret", "token", "password", "key", "auth")
 
 _SENSITIVE_HEADERS: frozenset[str] = frozenset(
     {
@@ -37,6 +55,7 @@ _SENSITIVE_HEADERS: frozenset[str] = frozenset(
 
 REDACTED = "[REDACTED]"
 _PARTIAL_THRESHOLD = 20
+_MAX_DEPTH = 32
 
 
 def _normalize_key(key: str) -> str:
@@ -66,7 +85,7 @@ class Sanitizer:
         """Return a sanitized copy of *data*."""
         if not self._enabled:
             return data
-        return self._walk(data)
+        return self._walk(data, 0, set())
 
     def sanitize_headers(self, headers: dict[str, str]) -> dict[str, str]:
         """Sanitize HTTP headers."""
@@ -82,19 +101,36 @@ class Sanitizer:
 
     # ------------------------------------------------------------------
 
-    def _walk(self, obj: Any) -> Any:
+    def _walk(self, obj: Any, depth: int, seen: set[int]) -> Any:
+        if depth > _MAX_DEPTH:
+            return "[MAX_DEPTH]"
+        obj_id = id(obj)
+        if isinstance(obj, (dict, list, tuple)) and obj_id in seen:
+            return "[CIRCULAR]"
         if isinstance(obj, dict):
-            return {k: self._process_kv(k, v) for k, v in obj.items()}
+            seen.add(obj_id)
+            result = {k: self._process_kv(k, v, depth, seen) for k, v in obj.items()}
+            seen.discard(obj_id)
+            return result
         if isinstance(obj, (list, tuple)):
-            return [self._walk(item) for item in obj]
+            seen.add(obj_id)
+            result_list = [self._walk(item, depth + 1, seen) for item in obj]
+            seen.discard(obj_id)
+            return result_list
         return obj
 
-    def _process_kv(self, key: str, value: Any) -> Any:
-        if _normalize_key(key) in self._sensitive_normalized:
+    def _is_sensitive(self, key: str) -> bool:
+        normalized = _normalize_key(key)
+        if normalized in self._sensitive_normalized:
+            return True
+        return any(p in normalized for p in _SENSITIVE_PATTERNS)
+
+    def _process_kv(self, key: str, value: Any, depth: int, seen: set[int]) -> Any:
+        if self._is_sensitive(key):
             if isinstance(value, str):
                 return self._redact(value)
             return REDACTED
-        return self._walk(value)
+        return self._walk(value, depth + 1, seen)
 
     def _redact(self, value: str) -> str:
         if not self._partial or len(value) < _PARTIAL_THRESHOLD:

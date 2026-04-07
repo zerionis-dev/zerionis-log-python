@@ -26,17 +26,13 @@ class ZerionisConfig(BaseSettings):
     max_stacktrace_lines: int = 25
     max_extra_fields: int = 20
 
-    # Request body capture
+    # Request events
     request_start_enabled: bool = False
-    include_request_body: bool = False
-    include_response_body: bool = False
-    body_content_types: list[str] = Field(default_factory=lambda: ["application/json"])
-    max_body_size: int = 8192
 
     # Sanitization
     sanitize_enabled: bool = True
     sanitize_fields: list[str] = Field(default_factory=list)
-    partial_redaction: bool = True
+    partial_redaction: bool = False
 
     # Endpoint filtering
     exclude_endpoints: list[str] = Field(

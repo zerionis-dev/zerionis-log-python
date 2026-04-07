@@ -20,13 +20,11 @@ class ZerionisContext:
     """Thread-safe, async-safe request context backed by ``ContextVar``."""
 
     _max_extra: int = 20
-    _overflow_warned: bool = False
 
     @classmethod
     def configure(cls, max_extra: int) -> None:
         """Set the maximum number of extra fields allowed."""
         cls._max_extra = max_extra
-        cls._overflow_warned = False
 
     @staticmethod
     def set(
@@ -55,7 +53,7 @@ class ZerionisContext:
         raw = _ctx.get()
         if raw is None:
             return {}
-        result = {k: v for k, v in raw.items() if k != "_extra"}
+        result = {k: v for k, v in raw.items() if not k.startswith("_")}
         extra = raw.get("_extra", {})
         if extra:
             result["extra"] = dict(extra)
@@ -70,13 +68,13 @@ class ZerionisContext:
             return
         extra: dict[str, Any] = raw.setdefault("_extra", {})
         if len(extra) >= cls._max_extra and key not in extra:
-            if not cls._overflow_warned:
+            if not raw.get("_overflow_warned"):
                 _logger.warning(
                     "Max extra fields (%d) reached, dropping key %r",
                     cls._max_extra,
                     key,
                 )
-                cls._overflow_warned = True
+                raw["_overflow_warned"] = True
             return
         extra[validate_extra_key(key)] = _truncate(value)
 
