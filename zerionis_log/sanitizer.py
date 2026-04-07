@@ -42,7 +42,7 @@ _DEFAULT_SENSITIVE: frozenset[str] = frozenset(
     }
 )
 
-_SENSITIVE_PATTERNS: tuple[str, ...] = ("secret", "token", "password", "key", "auth")
+_SENSITIVE_PATTERNS: tuple[str, ...] = ("secret", "token", "password", "credential", "auth")
 
 _SENSITIVE_HEADERS: frozenset[str] = frozenset(
     {
