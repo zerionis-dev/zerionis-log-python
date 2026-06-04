@@ -16,6 +16,7 @@ from zerionis_log.models import (
     ZerionisLogEvent,
     _strip_empty,
 )
+from zerionis_log.sanitizer import Sanitizer
 from zerionis_log.validator import sanitize_message
 
 # Try fast JSON serializer, fall back to stdlib.
@@ -57,11 +58,19 @@ class ZerionisFormatter(logging.Formatter):
             version=config.version,
         )
         self._service_dict = _strip_empty(self._service.model_dump(mode="python"))
+        self._sanitizer = Sanitizer(
+            extra_fields=config.sanitize_fields,
+            partial_redaction=config.partial_redaction,
+            enabled=config.sanitize_enabled,
+        )
 
     def format(self, record: logging.LogRecord) -> str:
         event: ZerionisLogEvent | None = getattr(record, "_zerionis_event", None)
         if event is not None:
-            return _dumps(event.to_dict(), pretty=self._config.pretty_print)
+            data = event.to_dict()
+            if "extra" in data:
+                data["extra"] = self._sanitizer.sanitize(data["extra"])
+            return _dumps(data, pretty=self._config.pretty_print)
         return _dumps(self._build_event(record), pretty=self._config.pretty_print)
 
     # ------------------------------------------------------------------
@@ -118,6 +127,6 @@ class ZerionisFormatter(logging.Formatter):
 
         extra = ctx.get("extra")
         if extra:
-            data["extra"] = extra
+            data["extra"] = self._sanitizer.sanitize(extra)
 
         return data

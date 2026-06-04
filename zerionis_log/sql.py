@@ -84,7 +84,7 @@ def _emit(
     ctx = ZerionisContext.get()
     event = ZerionisLogEvent(
         timestamp=datetime.now(timezone.utc).isoformat(),
-        level="WARN" if event_type == EventType.SQL_SLOW else "ERROR",
+        level="WARNING" if event_type == EventType.SQL_SLOW else "ERROR",
         logger="zerionis_log.sql",
         message=f"SQL {event_type.value}: {query[:120]}",
         event_type=event_type,
