@@ -1,0 +1,14 @@
+# Falsos positivos de la regla generic-api-key, revisados uno por uno el
+# 2026-07-27. Cada linea lleva el motivo: una excepcion sin motivo es una
+# excepcion que nadie puede auditar despues.
+#
+# Formato: <commit>:<archivo>:<regla>:<linea>
+
+# tests/test_sanitizer.py:21 es el dato de entrada de la prueba que verifica
+# que el Sanitizer redacta una api_key anidada. La cadena tiene que parecer
+# una llave para que la prueba valga; si se ofusca, la prueba deja de probar.
+0673fc0b1806f5606bc2b303210ef8d70c37a8ce:tests/test_sanitizer.py:generic-api-key:21
+
+# benchmarks/bench_overhead.py:61 es el payload sintetico con el que se mide
+# el costo del sanitizado. Mismo caso: el valor imita una llave a proposito.
+0673fc0b1806f5606bc2b303210ef8d70c37a8ce:benchmarks/bench_overhead.py:generic-api-key:61
