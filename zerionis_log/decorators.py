@@ -75,7 +75,7 @@ def log_slow(
             )
             event = ZerionisLogEvent(
                 timestamp=datetime.now(timezone.utc).isoformat(),
-                level="WARN" if event_type == EventType.METHOD_SLOW else "ERROR",
+                level="WARNING" if event_type == EventType.METHOD_SLOW else "ERROR",
                 logger=f"{fn.__module__}.{fn.__qualname__}",
                 message=f"{fn.__qualname__} took {duration_ms:.2f}ms",
                 event_type=event_type,

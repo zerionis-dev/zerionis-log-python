@@ -58,6 +58,3 @@ def validate_extra_key(key: str) -> str:
     return _CONTROL_CHARS.sub("", key)[:_MAX_EXTRA_KEY_LEN]
 
 
-def validate_extra_value(value: str) -> str:
-    """Truncate an extra-field value."""
-    return value[:_MAX_EXTRA_VALUE_LEN]

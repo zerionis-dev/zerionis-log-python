@@ -18,7 +18,6 @@ from zerionis_log.models import (
     ZerionisLogEvent,
 )
 from zerionis_log.otel import generate_trace_id, get_otel_trace_id
-from zerionis_log.sanitizer import Sanitizer
 from zerionis_log.validator import is_valid_trace_id, sanitize_message, sanitize_path
 
 _logger = logging.getLogger("zerionis_log.middleware")
@@ -37,11 +36,6 @@ class ZerionisMiddleware:
             name=self._config.service_name,
             environment=self._config.environment,
             version=self._config.version,
-        )
-        self._sanitizer = Sanitizer(
-            extra_fields=self._config.sanitize_fields,
-            partial_redaction=self._config.partial_redaction,
-            enabled=self._config.sanitize_enabled,
         )
 
     async def __call__(self, scope: dict[str, Any], receive: Any, send: Any) -> None:
